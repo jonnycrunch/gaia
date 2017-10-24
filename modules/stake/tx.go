@@ -63,7 +63,7 @@ func (tx BondUpdate) ValidateBasic() error {
 type TxBond struct{ BondUpdate }
 
 // NewTxBond - new TxBond
-func NewTxBond(amount coin.Coin, pubKey []byte) sdk.Tx {
+func NewTxBond(amount coin.Coin, pubKey crypto.PubKey) sdk.Tx {
 	return TxBond{BondUpdate{
 		Amount: amount,
 		PubKey: pubKey,
@@ -74,8 +74,9 @@ func NewTxBond(amount coin.Coin, pubKey []byte) sdk.Tx {
 type TxUnbond struct{ BondUpdate }
 
 // NewTxUnbond - new TxUnbond
-func NewTxUnbond(amount coin.Coin) sdk.Tx {
-	return TxUnbond{
+func NewTxUnbond(amount coin.Coin, pubKey crypto.PubKey) sdk.Tx {
+	return TxUnbond{BondUpdate{
 		Amount: amount,
-	}.Wrap()
+		PubKey: pubKey,
+	}}.Wrap()
 }
