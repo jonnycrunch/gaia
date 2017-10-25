@@ -24,14 +24,19 @@ const (
 
 //nolint
 var (
+	CmdDeclareCandidacy = &cobra.Command{
+		Use:   "declare-candidacy",
+		Short: "create new validator pubKey account and delegate some coins to it",
+		RunE:  cmdDeclareCandidacy,
+	}
 	CmdBond = &cobra.Command{
 		Use:   "bond",
-		Short: "delegate or self-bond coins to a candidate bond account",
+		Short: "delegate coins to an existing pubKey bond account",
 		RunE:  cmdBond,
 	}
 	CmdUnbond = &cobra.Command{
 		Use:   "unbond",
-		Short: "unbond coins from a candidate bond account",
+		Short: "unbond coins from a pubKey bond account",
 		RunE:  cmdUnbond,
 	}
 )
@@ -42,6 +47,7 @@ func init() {
 	fsDelegation.String(FlagAmount, "1atom", "Amount of Atoms")
 	fsDelegation.String(FlagPubKey, "", "PubKey of the Validator")
 
+	CmdDeclareCandidacy.Flags().AddFlagSet(fsDelegation)
 	CmdBond.Flags().AddFlagSet(fsDelegation)
 	CmdUnbond.Flags().AddFlagSet(fsDelegation)
 }

@@ -15,7 +15,7 @@ type transferFn func(from sdk.Actor, to sdk.Actor, coins coin.Coins) abci.Result
 // default transfer runs full DeliverTX
 func defaultTransferFn(ctx sdk.Context, store state.SimpleDB, dispatch sdk.Deliver) transferFn {
 	return func(sender, receiver sdk.Actor, coins coin.Coins) (res abci.Result) {
-		// Move coins from the delegator account to the candidate lock account
+		// Move coins from the delegator account to the pubKey lock account
 		send := coin.NewSendOneTx(sender, receiver, coins)
 
 		// If the deduction fails (too high), abort the command
@@ -28,30 +28,30 @@ func defaultTransferFn(ctx sdk.Context, store state.SimpleDB, dispatch sdk.Deliv
 }
 
 const (
-	candidateBondKey = iota
+	candidateKey = iota
 	delegatorBondKey
 	paramKey
 )
 
-// LoadCandidateBonds - loads the candidate bond set
+// LoadCandidates - loads the pubKey bond set
 // TODO ultimately this function should be made unexported... being used right now
 // for patchwork of tick functionality therefor much easier if exported until
 // the new SDK is created
-func LoadCandidateBonds(store state.SimpleDB) (candidateBonds CandidateBonds) {
-	b := store.Get([]byte{candidateBondKey})
+func LoadCandidates(store state.SimpleDB) (candidates Candidates) {
+	b := store.Get([]byte{candidateKey})
 	if b == nil {
 		return
 	}
-	err := wire.ReadBinaryBytes(b, &candidateBonds)
+	err := wire.ReadBinaryBytes(b, &candidates)
 	if err != nil {
 		panic(err) // This error should never occure big problem if does
 	}
 	return
 }
 
-func saveCandidateBonds(store state.SimpleDB, candidateBonds CandidateBonds) {
-	b := wire.BinaryBytes(candidateBonds)
-	store.Set([]byte{candidateBondKey}, b)
+func saveCandidates(store state.SimpleDB, candidates Candidates) {
+	b := wire.BinaryBytes(candidates)
+	store.Set([]byte{candidateKey}, b)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
