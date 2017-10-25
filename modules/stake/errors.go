@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	errCandidateEmpty     = fmt.Errorf("Cannot bond to an empty candidate")
 	errBadBondingDenom    = fmt.Errorf("Invalid coin denomination")
 	errBadBondingAmount   = fmt.Errorf("Amount must be > 0")
 	errNoBondingAcct      = fmt.Errorf("No bond account for this (address, validator) pair")
@@ -27,4 +28,8 @@ var (
 
 func resErrLoadingDelegators(err error) abci.Result {
 	return abci.ErrBaseEncodingError.AppendLog("Error loading delegators: " + err.Error()) //should never occur
+}
+
+func resErrLoadingDelegator(key []byte) abci.Result {
+	return abci.ErrBaseEncodingError.AppendLog(fmt.Sprintf("error loading delegator with key: %v", key))
 }

@@ -27,10 +27,12 @@ func defaultTransferFn(ctx sdk.Context, store state.SimpleDB, dispatch sdk.Deliv
 	}
 }
 
+// nolint
 const (
-	candidateKey = iota
-	delegatorBondKey
-	paramKey
+	// Keys for store prefixes
+	CandidateKey = iota
+	DelegatorBondKey
+	ParamKey
 )
 
 // LoadCandidates - loads the pubKey bond set
@@ -38,7 +40,7 @@ const (
 // for patchwork of tick functionality therefor much easier if exported until
 // the new SDK is created
 func LoadCandidates(store state.SimpleDB) (candidates Candidates) {
-	b := store.Get([]byte{candidateKey})
+	b := store.Get([]byte{CandidateKey})
 	if b == nil {
 		return
 	}
@@ -51,14 +53,14 @@ func LoadCandidates(store state.SimpleDB) (candidates Candidates) {
 
 func saveCandidates(store state.SimpleDB, candidates Candidates) {
 	b := wire.BinaryBytes(candidates)
-	store.Set([]byte{candidateKey}, b)
+	store.Set([]byte{CandidateKey}, b)
 }
 
 /////////////////////////////////////////////////////////////////////////////////
 
 func loadDelegatorBondsKey(delegator sdk.Actor) []byte {
 	delegatorBytes := wire.BinaryBytes(&delegator)
-	return append([]byte{delegatorBondKey}, delegatorBytes...)
+	return append([]byte{DelegatorBondKey}, delegatorBytes...)
 }
 func getDelegatorFromKey(key []byte) (delegator sdk.Actor, err error) {
 	err = wire.ReadBinaryBytes(key[1:], &delegator)
@@ -99,7 +101,7 @@ func removeDelegatorBonds(store state.SimpleDB, delegator sdk.Actor) {
 
 // load/save the global staking params
 func loadParams(store state.SimpleDB) (params Params) {
-	b := store.Get([]byte{paramKey})
+	b := store.Get([]byte{ParamKey})
 	if b == nil {
 		return defaultParams()
 	}
@@ -111,5 +113,5 @@ func loadParams(store state.SimpleDB) (params Params) {
 }
 func saveParams(store state.SimpleDB, params Params) {
 	b := wire.BinaryBytes(params)
-	store.Set([]byte{paramKey}, b)
+	store.Set([]byte{ParamKey}, b)
 }

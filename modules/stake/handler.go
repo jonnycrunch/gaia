@@ -315,21 +315,21 @@ func runTxUnbond(store state.SimpleDB, sender sdk.Actor,
 
 	//get pubKey bond
 	candidates := LoadCandidates(store)
-	bvIndex, candidate := candidates.GetByPubKey(tx.PubKey)
+	cdtIndex, candidate := candidates.GetByPubKey(tx.PubKey)
 	if candidate == nil {
 		return resNoCandidateForAddress
 	}
 
 	// subtract bond tokens from delegatorBond
-	if delegatorBond.Tickets.LT(tx.Bond.Amount) {
+	if delegatorBond.Tickets < uint64(tx.Bond.Amount) {
 		return resInsufficientFunds
 	}
-	delegatorBond.Tickets -= tx.Bond.Amount
+	delegatorBond.Tickets -= uint64(tx.Bond.Amount)
 
-	if delegatorBond.Tickets.Equal(Zero) {
+	if delegatorBond.Tickets == 0 {
 		//begin to unbond all of the tokens if the validator unbonds their last token
-		if sender.Equals(tx.PubKey) {
-			res = fullyUnbondPubKey(candidate, store)
+		if sender.Equals(candidate.Owner) {
+			res = fullyUnbondPubKey(candidate, store, transferFn)
 			if res.IsErr() {
 				return res //TODO add more context to this error?
 			}
@@ -341,29 +341,29 @@ func runTxUnbond(store state.SimpleDB, sender sdk.Actor,
 	}
 
 	// transfer coins back to account
-	candidate.Tickets -= tx.Bond.Amount
-	if candidate.TotalBondTokens.Equal(Zero) {
-		candidates.Remove(bvIndex)
+	candidate.Tickets -= uint64(tx.Bond.Amount)
+	if candidate.Tickets == 0 {
+		candidates.Remove(cdtIndex)
 	}
-	unbondCoin := tx.Bond
-	unbondAmt := uint64(unbondCoin.Amount)
-	res = transferFn(candidate.HoldAccount(), sender, coin.Coins{unbondCoin})
+	res = transferFn(candidate.HoldAccount(), sender, coin.Coins{tx.Bond})
 	if res.IsErr() {
 		return res
 	}
-
-	bond.Tickets -= unbondAmt
-
 	saveCandidates(store, candidates)
+
 	return abci.OK
 }
 
 //TODO improve efficiency of this function
-func fullyUnbondPubKey(candidate *Candidate, store state.SimpleDB,
-	sender sdk.Actor, transferFn transferFn) (res abci.Result) {
+func fullyUnbondPubKey(candidate *Candidate, store state.SimpleDB, transferFn transferFn) (res abci.Result) {
+
+	// get global params
+	params := loadParams(store)
+	maxVals := params.MaxVals
+	bondDenom := params.AllowedBondDenom
 
 	//TODO upgrade list queue... make sure that endByte as nil is okay
-	allDelegators := store.List([]byte{delegatorKeyPrefix}, nil, maxVal)
+	allDelegators := store.List([]byte{DelegatorBondKey}, nil, maxVals)
 
 	for _, delegatorRec := range allDelegators {
 
@@ -378,8 +378,8 @@ func fullyUnbondPubKey(candidate *Candidate, store state.SimpleDB,
 		for _, delegatorBond := range delegatorBonds {
 			if delegatorBond.PubKey.Equals(candidate.PubKey) {
 				txUnbond := TxUnbond{BondUpdate{candidate.PubKey,
-					coin.Coin{bondDenom, delegatorBond.Tickets}}}
-				res = runTxUnbond(store, delegator, candidate.HolderAccount(), transferFn, txUnbond)
+					coin.Coin{bondDenom, int64(delegatorBond.Tickets)}}}
+				res = runTxUnbond(store, delegator, transferFn, txUnbond)
 				if res.IsErr() {
 					return res
 				}
